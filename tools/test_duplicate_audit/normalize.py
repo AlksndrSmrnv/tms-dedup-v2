@@ -161,16 +161,48 @@ def light_stem_ru(token: str) -> str:
     return token
 
 
+def _augment_with_stems(words: Iterable[str]) -> frozenset[str]:
+    """Расширить набор словоформ их `light_stem_ru`-стеммированными версиями.
+
+    NOISE_WORDS / STOPWORDS в config.py хранятся в «леммах» («тест»,
+    «проверка»), а на вход нормализации приходят инфлектированные формы
+    («тестов», «проверку»). После стемминга обе формы дают общий стем
+    («тест», «проверк»), и именно этот стем должен ловиться фильтром.
+    Для стопслов стемминг обычно no-op (они ≤3 символов), но для noise
+    слов это принципиально: «проверка» стеммится в «проверк».
+    """
+    expanded: set[str] = set()
+    for w in words:
+        if not w:
+            continue
+        expanded.add(w)
+        stem = light_stem_ru(w)
+        if stem:
+            expanded.add(stem)
+    return frozenset(expanded)
+
+
+_NOISE_STEMS: frozenset[str] = _augment_with_stems(NOISE_WORDS)
+_STOPWORD_STEMS: frozenset[str] = _augment_with_stems(STOPWORDS)
+
+
 def is_noise(token: str) -> bool:
-    return token in NOISE_WORDS
+    return token in _NOISE_STEMS
 
 
 def is_stopword(token: str) -> bool:
-    return token in STOPWORDS
+    return token in _STOPWORD_STEMS
 
 
 def normalize_tokens(tokens: Iterable[str], *, keep_stopwords: bool = False) -> list[str]:
-    """Применить стемминг + фильтр noise/stopwords."""
+    """Применить стемминг + фильтр noise/stopwords.
+
+    Фильтры применяются дважды: до и после стемминга. До — быстрый отсев
+    уже-совпадающих форм; после — чтобы поймать инфлектированные формы,
+    которые стеммятся в лемму (или стем леммы) из NOISE_WORDS/STOPWORDS.
+    Без пост-чека «тестов» → «тест» (noise) просочился бы в итоговый
+    набор токенов, искажая TF-IDF и overlap-сравнения.
+    """
     result: list[str] = []
     for raw in tokens:
         if not raw:
@@ -181,6 +213,10 @@ def normalize_tokens(tokens: Iterable[str], *, keep_stopwords: bool = False) -> 
             continue
         stem = light_stem_ru(raw)
         if not stem:
+            continue
+        if is_noise(stem):
+            continue
+        if not keep_stopwords and is_stopword(stem):
             continue
         result.append(stem)
     return result
