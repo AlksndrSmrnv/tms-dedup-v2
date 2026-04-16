@@ -126,20 +126,22 @@ SEED_VARIANT_TOKENS: frozenset[str] = frozenset(
 
 SEED_TECH_SECTION_TOKENS: frozenset[str] = frozenset(
     {
+        # NB: как и в SEED_VARIANT_TOKENS, токены хранятся в форме, совпадающей
+        # с выходом light_stem_ru (сравнение идёт против стеммированных токенов).
         "регресс",
-        "регрессия",
-        "регрессионные",
+        "регресси",
+        "регрессионн",
         "smoke",
         "смоук",
-        "санити",
+        "санит",
         "sanity",
-        "ручные",
+        "ручн",
         "manual",
-        "авто",
+        "авт",
         "auto",
         "automation",
         "e2e",
-        "интеграционные",
+        "интеграционн",
         "integration",
         "unit",
         "api",

@@ -48,8 +48,14 @@ def atomic_write_text(path: Path, text: str, encoding: str = "utf-8") -> None:
 # --------------------------------------------------------------------------- #
 
 
-def iter_jsonl(path: Path) -> Iterator[dict[str, Any]]:
-    """Ленивое чтение JSONL по одной строке."""
+def iter_jsonl(path: Path, *, skip_bad: bool = False) -> Iterator[dict[str, Any]]:
+    """Ленивое чтение JSONL по одной строке.
+
+    По умолчанию поднимает `ValueError` на битой строке — строгий режим для
+    внутренних артефактов пайплайна. При `skip_bad=True` битая строка тихо
+    пропускается: это нужно, когда источник файла — интерактивный LLM-вывод
+    (Qwen CLI), где частичная валидность ожидаема и не должна валить пайплайн.
+    """
     with path.open("r", encoding="utf-8") as fh:
         for line_num, raw in enumerate(fh, start=1):
             line = raw.strip()
@@ -58,6 +64,8 @@ def iter_jsonl(path: Path) -> Iterator[dict[str, Any]]:
             try:
                 yield json.loads(line)
             except json.JSONDecodeError as exc:
+                if skip_bad:
+                    continue
                 raise ValueError(f"Битый JSON в {path}:{line_num}: {exc}") from exc
 
 

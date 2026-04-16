@@ -34,11 +34,15 @@ def load_pair_reviews(path: Path) -> dict[tuple[str, str], PairReview]:
     if not path.exists():
         return {}
     index: dict[tuple[str, str], PairReview] = {}
-    for obj in iter_jsonl(path):
+    # skip_bad=True: не-JSON строки в Qwen CLI выводе — ожидаемое явление;
+    # без этого флага ValueError из генератора iter_jsonl пробивает локальный
+    # try/except, т.к. исключение поднимается в месте `yield`, а не внутри
+    # тела цикла.
+    for obj in iter_jsonl(path, skip_bad=True):
         try:
             review = PairReview.model_validate(obj)
         except Exception:
-            # Битый ответ — пропускаем, не валим пайплайн.
+            # Битый pydantic-ответ — пропускаем, не валим пайплайн.
             continue
         key = _norm_pair_key(review.test_a_id, review.test_b_id)
         index[key] = review
@@ -49,7 +53,7 @@ def load_axis_reviews(path: Path) -> dict[str, SectionAxisReview]:
     if not path.exists():
         return {}
     index: dict[str, SectionAxisReview] = {}
-    for obj in iter_jsonl(path):
+    for obj in iter_jsonl(path, skip_bad=True):
         try:
             review = SectionAxisReview.model_validate(obj)
         except Exception:

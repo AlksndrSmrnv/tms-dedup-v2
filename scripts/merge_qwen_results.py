@@ -13,14 +13,47 @@ build_final_reports.py читает оба источника. Этот скри
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import TypeVar
 
 import typer
+from pydantic import BaseModel
 from rich.console import Console
 
 from tools.test_duplicate_audit.config import QWEN_RESULTS_DIR
-from tools.test_duplicate_audit.io_utils import iter_jsonl, write_jsonl
+from tools.test_duplicate_audit.io_utils import write_jsonl
 from tools.test_duplicate_audit.models import PairReview, SectionAxisReview
+
+T = TypeVar("T", bound=BaseModel)
+
+
+def _load_lenient(
+    path: Path, model: type[T], label: str, console: Console
+) -> tuple[list[T], int]:
+    """Прочитать JSONL, валидируя каждую строку через pydantic-модель.
+
+    Битые JSON-строки и ответы, не проходящие валидацию, пропускаются и
+    засчитываются в `broken`. Используем raw-чтение, а не iter_jsonl, чтобы
+    обе причины поломки (json.loads и model_validate) ловились одинаково —
+    иначе ValueError из генератора iter_jsonl пробил бы try/except.
+    """
+    valid: list[T] = []
+    broken = 0
+    with path.open("r", encoding="utf-8") as fh:
+        for line_num, raw in enumerate(fh, start=1):
+            line = raw.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+                valid.append(model.model_validate(obj))
+            except Exception as exc:  # noqa: BLE001
+                broken += 1
+                console.print(
+                    f"[yellow]Битый {label}-ответ в {path.name}:{line_num}, пропускаю: {exc}[/]"
+                )
+    return valid, broken
 
 app = typer.Typer(add_completion=False, no_args_is_help=False, help=__doc__)
 console = Console()
@@ -38,24 +71,16 @@ def main(
     valid_pairs: list[PairReview] = []
     broken_pairs = 0
     if pairs_in.exists():
-        for obj in iter_jsonl(pairs_in):
-            try:
-                valid_pairs.append(PairReview.model_validate(obj))
-            except Exception as exc:  # noqa: BLE001
-                broken_pairs += 1
-                console.print(f"[yellow]Битый pair-ответ, пропускаю: {exc}[/]")
+        valid_pairs, broken_pairs = _load_lenient(pairs_in, PairReview, "pair", console)
     else:
         console.print(f"[yellow]{pairs_in} отсутствует — пропускаю pairs[/]")
 
     valid_sections: list[SectionAxisReview] = []
     broken_sections = 0
     if sections_in.exists():
-        for obj in iter_jsonl(sections_in):
-            try:
-                valid_sections.append(SectionAxisReview.model_validate(obj))
-            except Exception as exc:  # noqa: BLE001
-                broken_sections += 1
-                console.print(f"[yellow]Битый section-ответ, пропускаю: {exc}[/]")
+        valid_sections, broken_sections = _load_lenient(
+            sections_in, SectionAxisReview, "section", console
+        )
     else:
         console.print(f"[yellow]{sections_in} отсутствует — пропускаю sections[/]")
 
