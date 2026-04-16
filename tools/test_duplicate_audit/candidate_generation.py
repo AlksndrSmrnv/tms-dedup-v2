@@ -5,8 +5,12 @@
 2. Через kNN на char-TF-IDF отбираем top-K ближайших соседей каждого теста.
 3. Для каждой пары вычисляем итоговый similarity:
        similarity = 0.55 * cos_char + 0.25 * cos_word + 0.20 * rapidfuzz_ratio
-4. Применяем section-aware правила: bonus при same_section, penalty при
-   cross_business_variant.
+   Это «сырая» лексическая похожесть без section-модификаторов.
+4. В `_classify_pair` применяем section-aware правила к confidence (а не
+   к similarity): bonus при same_section, penalty при cross_business_variant.
+   Держим similarity «сырым», чтобы пороги классификатора срабатывали
+   корректно и чтобы отчёты показывали настоящую текстовую близость
+   без скрытых модификаций.
 5. Определяем variant-конфликт по variant-токенам (seed + auto из секций).
 6. Выставляем авто-вердикт:
        LIKELY_DUPLICATE | POSSIBLE_DUPLICATE | RELATED_NOT_DUPLICATE
@@ -361,10 +365,13 @@ def generate_candidate_pairs(
 
         relation, same_section, cross_biz = _section_relation(a, b, axes_by_parent, tree)
 
-        similarity_raw = _combined_similarity(cos_char, cos_word, token_set_01, weights)
-        similarity = similarity_raw
-        if cross_biz:
-            similarity = max(0.0, similarity - thresholds.cross_business_variant_penalty)
+        # similarity — чисто текстовая мера (TF-IDF + rapidfuzz). Штраф за
+        # cross_business_variant здесь НЕ применяем: иначе он бы учитывался
+        # дважды (ещё раз внутри `_classify_pair`), а порог 0.88 в ветке
+        # cross_biz становился бы недостижим (sim ≤ 1 - 0.25 = 0.75). Все
+        # section-aware модификаторы применяются только к confidence в
+        # `_classify_pair`, симметрично с same_section_bonus.
+        similarity = _combined_similarity(cos_char, cos_word, token_set_01, weights)
 
         score = ScoreBreakdown(
             tfidf_char=round(cos_char, 4),
