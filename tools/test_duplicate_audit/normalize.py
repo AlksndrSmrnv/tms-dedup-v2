@@ -203,7 +203,7 @@ def normalize_section_name(section: str) -> tuple[str, list[str]]:
     телефону»)."""
     folded = fold(section)
     raw_tokens = tokenize(folded)
-    tokens = normalize_tokens(raw_tokens, keep_stopwords=False)
+    tokens = normalize_tokens(raw_tokens, keep_stopwords=True)
     return " ".join(tokens), tokens
 
 
