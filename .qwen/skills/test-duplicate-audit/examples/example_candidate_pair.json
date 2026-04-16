@@ -1,0 +1,31 @@
+{
+  "input": {
+    "test_a": {
+      "test_id": "T-101",
+      "title": "Перевод по номеру телефона",
+      "full_section_path": "Банк/Переводы/По телефону"
+    },
+    "test_b": {
+      "test_id": "T-205",
+      "title": "Перевод по карте",
+      "full_section_path": "Банк/Переводы/По карте"
+    },
+    "auto_hypothesis": {
+      "similarity": 0.82,
+      "auto_verdict": "RELATED_NOT_DUPLICATE",
+      "section_relation": "cross_business_variant",
+      "variant_conflict": true,
+      "variant_conflict_tokens": ["телефон", "карт"]
+    }
+  },
+  "expected_output": {
+    "test_a_id": "T-101",
+    "test_b_id": "T-205",
+    "verdict": "RELATED_NOT_DUPLICATE",
+    "confidence": 0.9,
+    "same_base_intent": true,
+    "different_dimensions": ["способ перевода"],
+    "section_relation": "cross_business_variant",
+    "explanation": "Один и тот же базовый сценарий (перевод), но разные каналы — это не дубль, а родственные тесты."
+  }
+}

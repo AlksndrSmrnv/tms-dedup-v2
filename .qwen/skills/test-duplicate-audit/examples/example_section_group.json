@@ -1,0 +1,38 @@
+{
+  "input": {
+    "parent_section": "Банк/Переводы",
+    "children": [
+      {
+        "section_name": "По номеру телефона",
+        "distinctive_tokens": ["телефон", "номер"],
+        "test_count": 14
+      },
+      {
+        "section_name": "По карте",
+        "distinctive_tokens": ["карт"],
+        "test_count": 11
+      },
+      {
+        "section_name": "По реквизитам",
+        "distinctive_tokens": ["реквизит"],
+        "test_count": 6
+      }
+    ],
+    "auto_hypothesis": {
+      "axis_type": "BUSINESS_VARIANT",
+      "confidence": 0.85
+    }
+  },
+  "expected_output": {
+    "parent_section": "Банк/Переводы",
+    "axis_type": "BUSINESS_VARIANT",
+    "dimension_name": "способ перевода",
+    "confidence": 0.9,
+    "reason": "Дети соответствуют разным каналам одного и того же сценария перевода.",
+    "section_values": [
+      { "section_name": "По номеру телефона", "normalized_value": "phone" },
+      { "section_name": "По карте", "normalized_value": "card" },
+      { "section_name": "По реквизитам", "normalized_value": "requisites" }
+    ]
+  }
+}
