@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tms-dedup-v2/schemas/section_axis.schema.json",
+  "title": "SectionAxisReview",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["parent_section", "axis_type", "confidence"],
+  "properties": {
+    "parent_section": {
+      "type": "string",
+      "description": "Путь родительской секции (одинаковый с тем, что пришёл на вход)"
+    },
+    "axis_type": {
+      "type": "string",
+      "enum": ["BUSINESS_VARIANT", "FEATURE_GROUP", "TECH_GROUP", "UNKNOWN"]
+    },
+    "dimension_name": {
+      "type": "string",
+      "default": "",
+      "description": "Человеко-читаемое имя оси (для BUSINESS_VARIANT)"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "reason": {
+      "type": "string",
+      "default": ""
+    },
+    "section_values": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["section_name"],
+        "properties": {
+          "section_name": { "type": "string" },
+          "normalized_value": { "type": "string", "default": "" }
+        }
+      },
+      "default": []
+    }
+  }
+}

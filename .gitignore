@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# Тестовые артефакты
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Рабочие данные пайплайна (кроме примеров)
+/data/
+
+# IDE
+.idea/
+.vscode/
